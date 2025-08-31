@@ -133,7 +133,7 @@ class Ad {
             await s3
               .deleteObject({
                 Bucket: process.env.S3_BUCKET_NAME,
-                Key: imgPath.key, //  use only filename or the exact S3 key you stored
+                Key: fileName, //  use only filename or the exact S3 key you stored
               })
               .promise();
 
