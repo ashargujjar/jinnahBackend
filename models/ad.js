@@ -1,6 +1,8 @@
 const { Ad: AdModel } = require("../schemas/schemas");
 const fs = require("fs");
 const path = require("path");
+const AWS = require("aws-sdk");
+const s3 = new AWS.S3();
 class Ad {
   constructor(
     userId,
@@ -89,26 +91,58 @@ class Ad {
         throw new Error("Ad not found or unauthorized");
       }
 
-      // Delete images from uploads folder
+      // ----------- Delete images from uploads folder -------------
+      // if (ad.images && Array.isArray(ad.images)) {
+      //   for (const imgPath of ad.images) {
+      //     // Ensure cross-platform safe path
+      //     const fileName = path.basename(imgPath);
+      //     const fullPath = path.join(__dirname, "..", "uploads", fileName);
+
+      //     try {
+      //       await fs.promises.unlink(fullPath);
+      //       console.log(`Deleted image: ${fullPath}`);
+      //     } catch (err) {
+      //       if (err.code === "ENOENT") {
+      //         console.warn(`Image not found (already deleted?): ${fullPath}`);
+      //       } else {
+      //         console.error(`Failed to delete image: ${fullPath}`, err);
+      //       }
+      //     }
+      //   }
+      // }
       if (ad.images && Array.isArray(ad.images)) {
         for (const imgPath of ad.images) {
-          // Ensure cross-platform safe path
+          // Extract filename
           const fileName = path.basename(imgPath);
-          const fullPath = path.join(__dirname, "..", "uploads", fileName);
 
+          //  Delete from local uploads folder
+          const fullPath = path.join(__dirname, "..", "uploads", fileName);
           try {
             await fs.promises.unlink(fullPath);
-            console.log(`Deleted image: ${fullPath}`);
+            console.log(`Deleted local image: ${fullPath}`);
           } catch (err) {
             if (err.code === "ENOENT") {
-              console.warn(`Image not found (already deleted?): ${fullPath}`);
+              console.warn(`Local image not found: ${fullPath}`);
             } else {
-              console.error(`Failed to delete image: ${fullPath}`, err);
+              console.error(`Failed to delete local image: ${fullPath}`, err);
             }
+          }
+
+          //  Delete from S3 bucket
+          try {
+            await s3
+              .deleteObject({
+                Bucket: process.env.S3_BUCKET_NAME,
+                Key: imgPath.key, //  use only filename or the exact S3 key you stored
+              })
+              .promise();
+
+            console.log(`Deleted S3 image: ${fileName}`);
+          } catch (err) {
+            console.error(`Failed to delete S3 image: ${fileName}`, err);
           }
         }
       }
-
       // Delete ad from DB
       await AdModel.deleteOne({ _id: adId, userId });
       return ad;

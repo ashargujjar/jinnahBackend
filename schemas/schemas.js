@@ -29,7 +29,12 @@ const adSchema = new mongoose.Schema({
   floor: { type: Number, required: true },
   size: { type: Number, required: true }, // e.g., square feet
   furnished: { type: String, enum: ["Yes", "No"], default: "No" },
-  images: { type: [String], required: true },
+  images: [
+    {
+      url: { type: String, required: true }, // full S3 URL
+      key: { type: String, required: true }, // S3 file key (needed for deletion)
+    },
+  ],
   updated: { type: Boolean, default: false },
   updatedAt: { type: Date },
   creationDate: { type: Date, default: Date.now },

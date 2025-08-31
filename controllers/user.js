@@ -64,8 +64,14 @@ exports.postAd = async (req, res) => {
     size,
     furnished,
   } = req.body;
+
   const userId = req.user.id;
-  const images = req.files ? req.files.map((file) => file.path) : [];
+  const images = req.files
+    ? req.files.map((file) => ({
+        url: file.location, // S3 public URL
+        key: file.key, // S3 object key (needed for deletion later)
+      }))
+    : [];
   const ad = new Ad(
     userId,
     title,
