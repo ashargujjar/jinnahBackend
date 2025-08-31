@@ -112,10 +112,10 @@ class Ad {
       // }
       if (ad.images && Array.isArray(ad.images)) {
         for (const imgPath of ad.images) {
-          // Extract filename
-          const fileName = path.basename(imgPath);
+          // Extract filename from URL (for local deletion only)
+          const fileName = path.basename(imgPath.url);
 
-          //  Delete from local uploads folder
+          // Delete from local uploads folder
           const fullPath = path.join(__dirname, "..", "uploads", fileName);
           try {
             await fs.promises.unlink(fullPath);
@@ -128,21 +128,22 @@ class Ad {
             }
           }
 
-          //  Delete from S3 bucket
+          // Delete from S3 bucket
           try {
             await s3
               .deleteObject({
                 Bucket: process.env.S3_BUCKET_NAME,
-                Key: fileName, //  use only filename or the exact S3 key you stored
+                Key: imgPath.key, // use the exact S3 key from DB
               })
               .promise();
 
-            console.log(`Deleted S3 image: ${fileName}`);
+            console.log(`Deleted S3 image: ${imgPath.key}`);
           } catch (err) {
-            console.error(`Failed to delete S3 image: ${fileName}`, err);
+            console.error(`Failed to delete S3 image: ${imgPath.key}`, err);
           }
         }
       }
+
       // Delete ad from DB
       await AdModel.deleteOne({ _id: adId, userId });
       return ad;
